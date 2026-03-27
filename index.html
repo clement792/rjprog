@@ -13,6 +13,14 @@
       color: #264d81;
     }
 
+    .desktop-wrap {
+      display: block;
+    }
+
+    .mobile-wrap {
+      display: none;
+    }
+
     .wrap {
       background: #f4f8fc;
       border: 1px solid #d9e3f2;
@@ -140,6 +148,16 @@
       color: #264d81;
     }
 
+    @media (max-width: 768px) {
+      .desktop-wrap {
+        display: none;
+      }
+
+      .mobile-wrap {
+        display: block;
+      }
+    }
+
     @media (max-width: 480px) {
       .title-main { font-size: 18px; }
       .title { font-size: 15px; }
@@ -148,139 +166,172 @@
   </style>
 </head>
 <body>
-  <div id="app" class="wrap">
-    <div class="error">Chargement...</div>
+  <!-- VERSION DESKTOP -->
+  <div class="desktop-wrap">
+    <div id="app" class="wrap">
+      <div class="error">Chargement...</div>
+    </div>
   </div>
 
-<script>
-  var programmeTimeout = null;
+  <!-- VERSION MOBILE -->
+  <div class="mobile-wrap">
+    <div class="wrap">
+      <div class="top">
+        <div class="title-main">Programme</div>
+        <div class="sub">Consultez la grille complète des émissions Radio Judaica.</div>
+      </div>
 
-  function esc(str) {
-    return String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+      <div class="actions">
+        <a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille des programmes</a>
+        <a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>
+      </div>
+    </div>
+  </div>
 
-  function badge(format) {
-    var f = String(format || '').toLowerCase().trim();
-    if (f === 'audio') return '<span class="badge badge-audio">Audio</span>';
-    if (f === 'video' || f === 'vidéo') return '<span class="badge badge-video">Vidéo</span>';
-    return '';
-  }
+  <script>
+    var programmeLoaded = false;
+    var programmeTimeout = null;
 
-  function renderCard(label, show) {
-    var metaParts = [];
-    if (show.dayLabel) metaParts.push(show.dayLabel);
-    if (show.timeLabel) metaParts.push(show.timeLabel);
-    if (show.host) metaParts.push(show.host);
-
-    return (
-      '<div class="card">' +
-        '<div class="label">' + esc(label) + '</div>' +
-        '<div class="row">' +
-          '<div class="title">' + esc(show.title) + '</div>' +
-          badge(show.format) +
-        '</div>' +
-        '<div class="meta">' + esc(metaParts.join(' • ')) + '</div>' +
-      '</div>'
-    );
-  }
-
-  function showFallback(message) {
-    var app = document.getElementById('app');
-    if (!app) return;
-
-    app.innerHTML =
-      '<div class="top">' +
-        '<div class="title-main">Programme</div>' +
-        '<div class="sub">Accès simplifié aux émissions Radio Judaica.</div>' +
-      '</div>' +
-      '<div class="card">' +
-        '<div class="label">Information</div>' +
-        '<div class="title">Programme temporairement indisponible</div>' +
-        '<div class="meta">' + esc(message || 'Veuillez consulter la grille complète.') + '</div>' +
-      '</div>' +
-      '<div class="actions">' +
-        '<a class="btn btn-primary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>' +
-        '<a class="btn btn-secondary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille</a>' +
-      '</div>';
-  }
-
-  function renderProgramme(data) {
-    if (programmeTimeout) {
-      clearTimeout(programmeTimeout);
-      programmeTimeout = null;
+    function esc(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    var app = document.getElementById('app');
-    if (!app) return;
-
-    if (!data || !data.ok) {
-      showFallback('Impossible de charger le programme pour le moment.');
-      return;
+    function badge(format) {
+      var f = String(format || '').toLowerCase().trim();
+      if (f === 'audio') return '<span class="badge badge-audio">Audio</span>';
+      if (f === 'video' || f === 'vidéo') return '<span class="badge badge-video">Vidéo</span>';
+      return '';
     }
 
-    var currentCard = data.currentShow
-      ? renderCard('En ce moment', data.currentShow)
-      : (
+    function renderCard(label, show) {
+      var metaParts = [];
+      if (show.dayLabel) metaParts.push(show.dayLabel);
+      if (show.timeLabel) metaParts.push(show.timeLabel);
+      if (show.host) metaParts.push(show.host);
+
+      return (
         '<div class="card">' +
-          '<div class="label">En ce moment</div>' +
-          '<div class="title">Pas de direct en ce moment</div>' +
-          '<div class="meta">Consultez les prochaines émissions ci-dessous.</div>' +
+          '<div class="label">' + esc(label) + '</div>' +
+          '<div class="row">' +
+            '<div class="title">' + esc(show.title) + '</div>' +
+            badge(show.format) +
+          '</div>' +
+          '<div class="meta">' + esc(metaParts.join(' • ')) + '</div>' +
         '</div>'
       );
-
-    var nextCards = '';
-    (data.nextShows || []).forEach(function(show, index) {
-      nextCards += renderCard(index === 0 ? 'Prochaine émission' : 'Ensuite', show);
-    });
-
-    app.innerHTML =
-      '<div class="top">' +
-        '<div class="title-main">À suivre</div>' +
-        '<div class="sub">Le programme du direct, mis à jour automatiquement.</div>' +
-      '</div>' +
-      currentCard +
-      nextCards +
-      '<div class="actions">' +
-        '<a class="btn btn-primary" href="' + esc(data.liveUrl) + '" target="_blank">Voir le live</a>' +
-        '<a class="btn btn-secondary" href="' + esc(data.gridUrl) + '" target="_blank">Voir la grille</a>' +
-      '</div>' +
-      '<div class="foot">Mise à jour : ' + esc(data.updatedAt) + '</div>';
-  }
-
-  function loadProgramme() {
-    var old = document.getElementById('programme-data');
-    if (old) old.remove();
-
-    if (programmeTimeout) {
-      clearTimeout(programmeTimeout);
     }
 
-    programmeTimeout = setTimeout(function() {
-      showFallback('Le chargement prend trop de temps sur cet appareil. Vous pouvez consulter directement la grille complète.');
-    }, 4000);
+    function showFallback() {
+      var app = document.getElementById('app');
+      if (!app) return;
 
-    var s = document.createElement('script');
-    s.id = 'programme-data';
-    s.src = 'https://script.google.com/macros/s/AKfycbx4hQikLGLeMu1lunVhA7Eg9RDz-KKJCO91M8qggicBMsxqNqTmowjd3t393g_9IHRx/exec?prefix=renderProgramme&_=' + Date.now();
-    s.async = true;
-    s.onerror = function() {
+      app.innerHTML =
+        '<div class="top">' +
+          '<div class="title-main">Programme</div>' +
+          '<div class="sub">Le widget automatique n’est pas disponible sur cet appareil pour le moment.</div>' +
+        '</div>' +
+        '<div class="card">' +
+          '<div class="label">Accès rapide</div>' +
+          '<div class="title">Consultez directement la grille</div>' +
+          '<div class="meta">Vous pouvez aussi ouvrir le live Twitch de Radio Judaica.</div>' +
+        '</div>' +
+        '<div class="actions">' +
+          '<a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille</a>' +
+          '<a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>' +
+        '</div>';
+    }
+
+    function renderProgramme(data) {
+      programmeLoaded = true;
+
       if (programmeTimeout) {
         clearTimeout(programmeTimeout);
         programmeTimeout = null;
       }
-      showFallback('Le programme automatique n’est pas disponible sur cet appareil pour le moment.');
-    };
 
-    document.body.appendChild(s);
-  }
+      var app = document.getElementById('app');
+      if (!app) return;
 
-  loadProgramme();
-  setInterval(loadProgramme, 60000);
-</script>
+      if (!data || !data.ok) {
+        showFallback();
+        return;
+      }
+
+      var currentCard = data.currentShow
+        ? renderCard('En ce moment', data.currentShow)
+        : (
+          '<div class="card">' +
+            '<div class="label">En ce moment</div>' +
+            '<div class="title">Pas de direct en ce moment</div>' +
+            '<div class="meta">Consultez les prochaines émissions ci-dessous.</div>' +
+          '</div>'
+        );
+
+      var nextCards = '';
+      (data.nextShows || []).forEach(function(show, index) {
+        nextCards += renderCard(index === 0 ? 'Prochaine émission' : 'Ensuite', show);
+      });
+
+      app.innerHTML =
+        '<div class="top">' +
+          '<div class="title-main">À suivre</div>' +
+          '<div class="sub">Le programme du direct, mis à jour automatiquement.</div>' +
+        '</div>' +
+        currentCard +
+        nextCards +
+        '<div class="actions">' +
+          '<a class="btn btn-primary" href="' + esc(data.liveUrl) + '" target="_blank">Voir le live</a>' +
+          '<a class="btn btn-secondary" href="' + esc(data.gridUrl) + '" target="_blank">Voir la grille</a>' +
+        '</div>' +
+        '<div class="foot">Mise à jour : ' + esc(data.updatedAt) + '</div>';
+    }
+
+    function loadProgramme() {
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        return;
+      }
+
+      var old = document.getElementById('programme-data');
+      if (old) old.remove();
+
+      programmeLoaded = false;
+
+      if (programmeTimeout) {
+        clearTimeout(programmeTimeout);
+      }
+
+      programmeTimeout = setTimeout(function() {
+        if (!programmeLoaded) {
+          showFallback();
+        }
+      }, 5000);
+
+      var s = document.createElement('script');
+      s.id = 'programme-data';
+      s.src = 'https://script.google.com/macros/s/AKfycbx4hQikLGLeMu1lunVhA7Eg9RDz-KKJCO91M8qggicBMsxqNqTmowjd3t393g_9IHRx/exec?prefix=renderProgramme&_=' + Date.now();
+      s.async = true;
+      s.onerror = function() {
+        if (programmeTimeout) {
+          clearTimeout(programmeTimeout);
+          programmeTimeout = null;
+        }
+        showFallback();
+      };
+
+      document.body.appendChild(s);
+    }
+
+    loadProgramme();
+    setInterval(function() {
+      if (!window.matchMedia('(max-width: 768px)').matches) {
+        loadProgramme();
+      }
+    }, 60000);
+  </script>
 </body>
 </html>
