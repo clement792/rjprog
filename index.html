@@ -153,96 +153,46 @@
   </div>
 
   <script>
-    var programmeLoaded = false;
-    var programmeTimeout = null;
-
-    function isSmartphone() {
-      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
-      return /Android|iPhone|iPod|Windows Phone/i.test(ua);
-    }
-
-    function esc(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function badge(format) {
-      var f = String(format || '').toLowerCase().trim();
-      if (f === 'audio') return '<span class="badge badge-audio">Audio</span>';
-      if (f === 'video' || f === 'vidéo') return '<span class="badge badge-video">Vidéo</span>';
-      return '';
-    }
-
-    function renderCard(label, show) {
-      var metaParts = [];
-      if (show.dayLabel) metaParts.push(show.dayLabel);
-      if (show.timeLabel) metaParts.push(show.timeLabel);
-      if (show.host) metaParts.push(show.host);
-
-      return (
-        '<div class="card">' +
-          '<div class="label">' + esc(label) + '</div>' +
-          '<div class="row">' +
-            '<div class="title">' + esc(show.title) + '</div>' +
-            badge(show.format) +
-          '</div>' +
-          '<div class="meta">' + esc(metaParts.join(' • ')) + '</div>' +
-        '</div>'
-      );
-    }
-
-    function showSmartphoneFallback() {
-      var app = document.getElementById('app');
-      if (!app) return;
-
-      app.innerHTML =
-        '<div class="top">' +
-          '<div class="title-main">Programme</div>' +
-          '<div class="sub">Consultez la grille complète des émissions Radio Judaica.</div>' +
-        '</div>' +
-        '<div class="actions">' +
-          '<a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille des programmes</a>' +
-          '<a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>' +
-        '</div>';
-    }
-
-    function showDesktopFallback() {
-      var app = document.getElementById('app');
-      if (!app) return;
-
-      app.innerHTML =
-        '<div class="top">' +
-          '<div class="title-main">Programme</div>' +
-          '<div class="sub">Le widget automatique n’est pas disponible sur cet appareil pour le moment.</div>' +
-        '</div>' +
-        '<div class="card">' +
-          '<div class="label">Accès rapide</div>' +
-          '<div class="title">Consultez directement la grille</div>' +
-          '<div class="meta">Vous pouvez aussi ouvrir le live Twitch de Radio Judaica.</div>' +
-        '</div>' +
-        '<div class="actions">' +
-          '<a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille</a>' +
-          '<a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>' +
-        '</div>';
-    }
-
     function renderProgramme(data) {
-      programmeLoaded = true;
+      var app = document.getElementById('app');
+      if (!app) return;
 
-      if (programmeTimeout) {
-        clearTimeout(programmeTimeout);
-        programmeTimeout = null;
+      function esc(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
       }
 
-      var app = document.getElementById('app');
-      if (!app) return;
+      function badge(format) {
+        var f = String(format || '').toLowerCase().trim();
+        if (f === 'audio') return '<span class="badge badge-audio">Audio</span>';
+        if (f === 'video' || f === 'vidéo') return '<span class="badge badge-video">Vidéo</span>';
+        return '';
+      }
+
+      function renderCard(label, show) {
+        var metaParts = [];
+        if (show.dayLabel) metaParts.push(show.dayLabel);
+        if (show.timeLabel) metaParts.push(show.timeLabel);
+        if (show.host) metaParts.push(show.host);
+
+        return (
+          '<div class="card">' +
+            '<div class="label">' + esc(label) + '</div>' +
+            '<div class="row">' +
+              '<div class="title">' + esc(show.title) + '</div>' +
+              badge(show.format) +
+            '</div>' +
+            '<div class="meta">' + esc(metaParts.join(' • ')) + '</div>' +
+          '</div>'
+        );
+      }
 
       if (!data || !data.ok) {
-        showDesktopFallback();
+        app.innerHTML = '<div class="error">' + esc((data && data.error) || 'Impossible de charger le programme.') + '</div>';
         return;
       }
 
@@ -276,47 +226,17 @@
     }
 
     function loadProgramme() {
-      if (isSmartphone()) {
-        showSmartphoneFallback();
-        return;
-      }
-
       var old = document.getElementById('programme-data');
       if (old) old.remove();
-
-      programmeLoaded = false;
-
-      if (programmeTimeout) {
-        clearTimeout(programmeTimeout);
-      }
-
-      programmeTimeout = setTimeout(function() {
-        if (!programmeLoaded) {
-          showDesktopFallback();
-        }
-      }, 5000);
 
       var s = document.createElement('script');
       s.id = 'programme-data';
       s.src = 'https://script.google.com/macros/s/AKfycbx4hQikLGLeMu1lunVhA7Eg9RDz-KKJCO91M8qggicBMsxqNqTmowjd3t393g_9IHRx/exec?prefix=renderProgramme&_=' + Date.now();
-      s.async = true;
-      s.onerror = function() {
-        if (programmeTimeout) {
-          clearTimeout(programmeTimeout);
-          programmeTimeout = null;
-        }
-        showDesktopFallback();
-      };
-
       document.body.appendChild(s);
     }
 
     loadProgramme();
-    setInterval(function() {
-      if (!isSmartphone()) {
-        loadProgramme();
-      }
-    }, 60000);
+    setInterval(loadProgramme, 60000);
   </script>
 </body>
 </html>
