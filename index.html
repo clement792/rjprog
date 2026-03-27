@@ -13,14 +13,6 @@
       color: #264d81;
     }
 
-    .desktop-wrap {
-      display: block;
-    }
-
-    .mobile-wrap {
-      display: none;
-    }
-
     .wrap {
       background: #f4f8fc;
       border: 1px solid #d9e3f2;
@@ -148,16 +140,6 @@
       color: #264d81;
     }
 
-    @media (max-width: 768px) {
-      .desktop-wrap {
-        display: none;
-      }
-
-      .mobile-wrap {
-        display: block;
-      }
-    }
-
     @media (max-width: 480px) {
       .title-main { font-size: 18px; }
       .title { font-size: 15px; }
@@ -166,31 +148,18 @@
   </style>
 </head>
 <body>
-  <!-- VERSION DESKTOP -->
-  <div class="desktop-wrap">
-    <div id="app" class="wrap">
-      <div class="error">Chargement...</div>
-    </div>
-  </div>
-
-  <!-- VERSION MOBILE -->
-  <div class="mobile-wrap">
-    <div class="wrap">
-      <div class="top">
-        <div class="title-main">Programme</div>
-        <div class="sub">Consultez la grille complète des émissions Radio Judaica.</div>
-      </div>
-
-      <div class="actions">
-        <a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille des programmes</a>
-        <a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>
-      </div>
-    </div>
+  <div id="app" class="wrap">
+    <div class="error">Chargement...</div>
   </div>
 
   <script>
     var programmeLoaded = false;
     var programmeTimeout = null;
+
+    function isSmartphone() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      return /Android|iPhone|iPod|Windows Phone/i.test(ua);
+    }
 
     function esc(str) {
       return String(str || '')
@@ -226,7 +195,22 @@
       );
     }
 
-    function showFallback() {
+    function showSmartphoneFallback() {
+      var app = document.getElementById('app');
+      if (!app) return;
+
+      app.innerHTML =
+        '<div class="top">' +
+          '<div class="title-main">Programme</div>' +
+          '<div class="sub">Consultez la grille complète des émissions Radio Judaica.</div>' +
+        '</div>' +
+        '<div class="actions">' +
+          '<a class="btn btn-primary" href="https://radiojudaica.be/page/programmes-de-radio-judaica-24" target="_blank">Voir la grille des programmes</a>' +
+          '<a class="btn btn-secondary" href="https://www.twitch.tv/radiojudaica" target="_blank">Voir le live</a>' +
+        '</div>';
+    }
+
+    function showDesktopFallback() {
       var app = document.getElementById('app');
       if (!app) return;
 
@@ -258,7 +242,7 @@
       if (!app) return;
 
       if (!data || !data.ok) {
-        showFallback();
+        showDesktopFallback();
         return;
       }
 
@@ -292,7 +276,8 @@
     }
 
     function loadProgramme() {
-      if (window.matchMedia('(max-width: 768px)').matches) {
+      if (isSmartphone()) {
+        showSmartphoneFallback();
         return;
       }
 
@@ -307,7 +292,7 @@
 
       programmeTimeout = setTimeout(function() {
         if (!programmeLoaded) {
-          showFallback();
+          showDesktopFallback();
         }
       }, 5000);
 
@@ -320,7 +305,7 @@
           clearTimeout(programmeTimeout);
           programmeTimeout = null;
         }
-        showFallback();
+        showDesktopFallback();
       };
 
       document.body.appendChild(s);
@@ -328,7 +313,7 @@
 
     loadProgramme();
     setInterval(function() {
-      if (!window.matchMedia('(max-width: 768px)').matches) {
+      if (!isSmartphone()) {
         loadProgramme();
       }
     }, 60000);
